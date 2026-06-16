@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마음 은하계 (Mind Galaxy) - 퀘스트 미니게임 수정 버전</title>
+    <title>마음 은하계 (Mind Galaxy) - 1일차 미니게임 탑재 버전</title>
     <style>
         /* 🎨 기본 스타일 및 은하수 배경 */
         body {
@@ -21,7 +21,7 @@
         }
         @keyframes bgMove { from { background-position: 0 0; } to { background-position: 550px 1100px; } }
 
-        /* 📱 UI 윈도우 레이아웃 및 애니메이션 효과 */
+        /* 📱 UI 윈도우 레이아웃 */
         .window {
             display: none; position: relative; z-index: 10;
             background: rgba(15, 15, 35, 0.8); backdrop-filter: blur(15px);
@@ -40,7 +40,7 @@
         .title-glow { font-size: 2.3rem; color: #00ffcc; }
         .subtitle { color: #aaaacb; font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; }
 
-        /* 버튼 및 대시보드 조작계 */
+        /* 버튼 및 입력창 */
         .btn {
             background: linear-gradient(45deg, #a29bfe, #00cec9); color: white; border: none;
             padding: 12px 24px; font-weight: bold; border-radius: 30px; cursor: pointer;
@@ -56,4 +56,384 @@
             border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4);
             color: white; box-sizing: border-box; font-size: 1rem;
         }
-        input:focus { outline: none; border-color: #00ffcc; }
+        .remember-box { display: flex; align-items: center; justify-content: flex-start; margin: 10px 5px; font-size: 0.9rem; color: #b2bec3; }
+        .remember-box input { margin-right: 8px; width: 16px; height: 16px; }
+        .flex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .coin-bar { font-size: 1.2rem; color: #ffeaa7; font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(255,234,167,0.5); }
+
+        /* 리스트 스타일 */
+        .list-item {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            padding: 14px; border-radius: 14px; margin: 8px 0;
+            display: flex; justify-content: space-between; align-items: center; text-align: left;
+        }
+        .list-item span { font-size: 0.8rem; color: #b2bec3; display: block; margin-top: 4px; }
+        .option-btn {
+            width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; padding: 14px; color: white; font-size: 0.95rem; cursor: pointer; margin: 6px 0;
+        }
+        .option-btn:hover { background: rgba(0, 255, 204, 0.15); border-color: #00ffcc; }
+
+        /* 🪐 2D 파스텔 행성 및 오브젝트 */
+        .stage-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 20px; margin: 15px 0; }
+        .view-canvas { position: relative; width: 220px; height: 220px; margin: 10px auto; display: flex; justify-content: center; align-items: center; }
+        .sphere {
+            width: 120px; height: 120px; border-radius: 50%; position: relative; overflow: hidden;
+            box-shadow: inset -15px -15px 30px rgba(0,0,0,0.6); transition: 0.5s ease; z-index: 5;
+        }
+        .sphere::before, .sphere::after { content: ''; position: absolute; background: rgba(0,0,0,0.08); border-radius: 50%; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2); }
+        .sphere::before { width: 25px; height: 20px; top: 25px; left: 20px; }
+        .sphere::after { width: 35px; height: 25px; bottom: 30px; right: 25px; }
+
+        .pastel-gray { background: #d2dae2; }
+        .pastel-green { background: #a8e6cf; box-shadow: inset -15px -15px 30px rgba(0,0,0,0.5), 0 0 25px rgba(168,230,207,0.4); } 
+        .pastel-blue { background: #b5deff; box-shadow: inset -15px -15px 30px rgba(0,0,0,0.5), 0 0 25px rgba(181,222,255,0.4); }  
+        .pastel-red { background: #ffbfa3; box-shadow: inset -15px -15px 30px rgba(0,0,0,0.5), 0 0 25px rgba(255,191,163,0.4); }  
+
+        .decor { display: none; position: absolute; pointer-events: none; }
+        .dec-ring { width: 180px; height: 50px; border: 5px solid rgba(255, 234, 167, 0.6); border-radius: 50%; transform: rotate(-15deg); z-index: 6; }
+        .dec-moon { width: 20px; height: 20px; background: #f5f6fa; border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 7; animation: orbit2D 6s linear infinite; }
+        .dec-alien { font-size: 22px; top: 40px; left: 45px; z-index: 10; }
+        .dec-flower_red { font-size: 20px; bottom: 45px; left: 55px; z-index: 10; }
+
+        @keyframes orbit2D {
+            0% { transform: translate(-90px, -40px); z-index: 7; }
+            50% { transform: translate(90px, 40px); z-index: 4; }
+            100% { transform: translate(-90px, -40px); z-index: 7; }
+        }
+
+        /* 🗑️ [신규 구현] 1일차 우주 쓰레기 수거 미니게임 전용 스타일 */
+        .game-zone {
+            width: 100%; height: 300px; background: rgba(0, 0, 0, 0.6);
+            border: 2px dashed rgba(0, 255, 204, 0.3); border-radius: 16px;
+            position: relative; margin: 20px 0; overflow: hidden;
+        }
+        .trash {
+            position: absolute; font-size: 28px; cursor: pointer;
+            transition: transform 0.1s ease; user-select: none;
+            animation: floatTrash 4s ease-in-out infinite alternate;
+        }
+        .trash:hover { transform: scale(1.2); }
+        @keyframes floatTrash {
+            0% { margin-top: 0px; transform: rotate(0deg); }
+            100% { margin-top: 15px; transform: rotate(20deg); }
+        }
+        .success-banner {
+            display: none; color: #00ffcc; font-size: 2rem; font-weight: bold;
+            text-shadow: 0 0 20px rgba(0,255,204,0.8); animation: popSuccess 0.5s ease;
+        }
+        @keyframes popSuccess { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* 상단 상시 상태 바 */
+        #top-bar {
+            position: absolute; top: 20px; left: 20px; right: 20px; z-index: 100;
+            display: flex; justify-content: space-between; pointer-events: none; font-size: 0.9rem;
+        }
+        .info-pill {
+            background: rgba(10, 10, 25, 0.6); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 50px; pointer-events: auto; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stars"></div>
+
+    <div id="top-bar">
+        <div class="info-pill" id="pill-user">🛰️ 연결: 미탑승</div>
+        <div class="info-pill" id="pill-coin" style="color: #ffd700; display:none;">🪙 0개</div>
+    </div>
+
+    <!-- ================= [1] <첫 페이지> 화면 ================= -->
+    <div id="win-home" class="window active">
+        <h1 class="title-glow">나만의 행성 만들기</h1>
+        <p class="subtitle">우주 배경의 은하계 기지입니다. 나만의 빛깔을 가진 행성을 찾고,<br>친구들과 궤도를 연결해 정서적 지지를 나눠보세요.</p>
+        <div class="card">
+            <button class="btn" onclick="openWindow('win-login')">로그인</button>
+            <button class="btn outline" onclick="openWindow('win-register')">회원가입</button>
+        </div>
+    </div>
+
+    <!-- ================= [2] <회원가입 화면> ================= -->
+    <div id="win-register" class="window">
+        <h2>✨ 우주 주민 등록</h2>
+        <form onsubmit="appRegister(event)">
+            <input type="text" id="reg-id" placeholder="ID (불리는 이름)" required>
+            <input type="password" id="reg-pw" placeholder="PW (알아서 설정)" required>
+            <input type="password" id="reg-pw-confirm" placeholder="PW 다시 입력 창" required>
+            <button type="submit" class="btn" style="width: 100%; margin-top: 20px;">행성 개척선 가동</button>
+        </form>
+        <button class="btn outline" style="margin-top: 10px; width: 100%;" onclick="openWindow('win-home')">돌아가기</button>
+    </div>
+
+    <!-- ================= [3] <로그인 화면> ================= -->
+    <div id="win-login" class="window">
+        <h2>🔐 관제실 데이터 동기화</h2>
+        <form onsubmit="handleLogin(event)">
+            <input type="text" id="login-id" placeholder="ID 입력" required>
+            <input type="password" id="login-pw" placeholder="PW 입력" required>
+            <label class="remember-box">
+                <input type="checkbox" id="login-remember"> 내 아이디 기억하기
+            </label>
+            <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">로그인</button>
+        </form>
+        <button class="btn outline" style="margin-top: 10px; width: 100%;" onclick="openWindow('win-home')">돌아가기</button>
+    </div>
+
+    <!-- ================= [4] 메인 대시보드 화면 ================= -->
+    <div id="win-dashboard" class="window">
+        <h2 id="dash-title">- 관제사 기지</h2>
+        <div class="stage-box">
+            <div class="view-canvas">
+                <div id="my-ring" class="decor dec-ring"></div>
+                <div id="my-moon" class="decor dec-moon"></div>
+                <div id="my-alien" class="decor my-item dec-alien">👽</div>
+                <div id="my-flower_red" class="decor my-item dec-flower_red">🌹</div>
+                <div id="my-sphere" class="sphere pastel-gray"></div>
+            </div>
+            <p style="font-size: 0.85rem; color: #b2bec3; margin: 0;">누적 은하 탐측 지지율: <span id="dash-visitor" style="color:#00ffcc">0</span>회</p>
+        </div>
+        <div class="coin-bar">🪙 보유 스타 코인: <span id="dash-coin">0</span>개</div>
+        <button class="btn" style="width:100%" onclick="openWindow('win-test')">📊 10문항 정밀 정서 측정</button>
+        <div class="flex-grid">
+            <button class="btn outline" style="border-color:#ffd700; color:#ffd700" onclick="openWindow('win-shop')">🛒 데코 오브젝트 상점</button>
+            <button class="btn outline" style="border-color:#55efc4; color:#55efc4" onclick="openWindow('win-quest')">📜 치유 퀘스트 기지</button>
+        </div>
+        <button class="btn btn-danger" style="width:100%" onclick="appLogout()">로그아웃</button>
+    </div>
+
+    <!-- ================= [5] <간단한 검사 (10문항)> ================= -->
+    <div id="win-test" class="window">
+        <h3 id="test-step" style="color:#00cec9;">어울리는 행성 색깔 측정 중 (1/10)</h3>
+        <p id="test-q" style="font-weight:bold; font-size:1.05rem; margin:20px 0; min-height:50px; line-height:1.4;"></p>
+        <div id="test-options"></div>
+    </div>
+
+    <!-- ================= [6] 퀘스트 선택 창 (총 30개 기획 배열) ================= -->
+    <div id="win-quest" class="window">
+        <h2>📜 치유 퀘스트 목록 (30일 코스)</h2>
+        <p class="subtitle">마음을 가다듬는 매일의 행동 활성화 미션입니다.</p>
+        <div id="quest-container" style="max-height:40vh; overflow-y:auto;"></div>
+        <button class="btn outline" style="width:100%; margin-top:15px;" onclick="openWindow('win-dashboard')">관제소 복귀</button>
+    </div>
+
+    <!-- ================= [7] 1일차 미니게임 전용 창 ================= -->
+    <div id="win-game1" class="window">
+        <h2>🧹 1일차: 우주 쓰레기 수거</h2>
+        <p class="subtitle" style="margin-bottom:10px;">행성 궤도를 위협하는 쓰레기들을 마우스로 클릭하여 정화해 주세요!</p>
+        <div id="trash-count" style="font-weight:bold; color:#00ffcc; margin-bottom:5px;">남은 우주 쓰레기: 5개</div>
+        
+        <!-- 미니게임 플레이 구역 -->
+        <div class="game-zone" id="game-zone">
+            <!-- 자바스크립트로 부유 쓰레기 생성 예정 -->
+        </div>
+
+        <div class="success-banner" id="success-banner">🎉 성공! +10 코인</div>
+        <button class="btn outline" id="btn-game-exit" style="width:100%; margin-top:10px; display:none;" onclick="openWindow('win-dashboard')">보상 수령 및 기지 복귀</button>
+    </div>
+
+    <!-- ================= [8] 데코 상점 ================= -->
+    <div id="win-shop" class="window">
+        <h2>🛒 마음 정화 데코 상점</h2>
+        <div id="shop-container"></div>
+        <button class="btn outline" style="width:100%; margin-top:15px;" onclick="openWindow('win-dashboard')">상점 나가기</button>
+    </div>
+
+    <!-- ================= ⚙️ 시스템 엔진 자바스크립트 ================= -->
+    <script>
+        if (!localStorage.getItem('NET_GALAXY_SERVER_V5')) {
+            const seed = { 'tester': { pw: '1234', color: 'pastel-green', coins: 0, items: [], visitor: 0 } };
+            localStorage.setItem('NET_GALAXY_SERVER_V5', JSON.stringify(seed));
+        }
+        function getServer() { return JSON.parse(localStorage.getItem('NET_GALAXY_SERVER_V5')); }
+        function saveServer(db) { localStorage.setItem('NET_GALAXY_SERVER_V5', JSON.stringify(db)); }
+
+        let userSession = null;
+
+        function openWindow(winId) {
+            document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+            document.getElementById(winId).classList.add('active');
+
+            if (userSession) {
+                document.getElementById('pill-coin').innerText = `🪙 코인: ${userSession.coins}개`;
+                document.getElementById('dash-coin').innerText = userSession.coins;
+            }
+            if (winId === 'win-dashboard') {
+                document.getElementById('dash-title').innerText = `${userSession.id} 관제소`;
+                document.getElementById('dash-visitor').innerText = userSession.visitor;
+                renderPlanetView('my', userSession.color, userSession.items);
+            }
+            if (winId === 'win-login') {
+                const savedId = localStorage.getItem('GALAXY_REMEMBERED_ID');
+                if (savedId) { document.getElementById('login-id').value = savedId; document.getElementById('login-remember').checked = true; }
+            }
+        }
+
+        function appRegister(e) {
+            e.preventDefault();
+            const id = document.getElementById('reg-id').value.trim();
+            const pw = document.getElementById('reg-pw').value;
+            const confirm = document.getElementById('reg-pw-confirm').value;
+            if(pw !== confirm) return alert('설정한 PW가 일치 창의 내용과 다릅니다.');
+
+            let db = getServer();
+            if(db[id]) return alert('이미 존재하는 ID입니다.');
+            db[id] = { pw: pw, color: 'pastel-gray', coins: 0, items: [], visitor: 0 };
+            saveServer(db);
+            alert('새 은하 주소 등록 완료!');
+            openWindow('win-login');
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const id = document.getElementById('login-id').value.trim();
+            const pw = document.getElementById('login-pw').value;
+            const rem = document.getElementById('login-remember').checked;
+
+            let db = getServer();
+            if(!db[id] || db[id].pw !== pw) return alert('ID 또는 PW 정보가 일치하지 않습니다.');
+
+            if(rem) localStorage.setItem('GALAXY_REMEMBERED_ID', id);
+            else localStorage.removeItem('GALAXY_REMEMBERED_ID');
+
+            userSession = { id: id, ...db[id] };
+            document.getElementById('pill-user').innerText = `🛰️ 관제사: ${userSession.id}`;
+            document.getElementById('pill-coin').style.display = 'block';
+            openWindow('win-dashboard');
+        }
+
+        function appLogout() { userSession = null; document.getElementById('pill-user').innerText = `🛰️ 연결: 미탑승`; document.getElementById('pill-coin').style.display = 'none'; openWindow('win-home'); }
+
+        function renderPlanetView(prefix, colorKey, itemsArray) {
+            document.getElementById(`${prefix}-sphere`).className = `sphere ${colorKey || 'pastel-gray'}`;
+            document.getElementById(`${prefix}-ring`).style.display = 'none';
+            document.getElementById(`${prefix}-moon`).style.display = 'none';
+            document.querySelectorAll(`.${prefix}-item`).forEach(el => el.style.display = 'none');
+            itemsArray.forEach(itemId => {
+                const targetDom = document.getElementById(`${prefix}-${itemId}`);
+                if (targetDom) targetDom.style.display = 'block';
+            });
+        }
+
+        // --- 📜 30일 퀘스트 생성 엔진 및 1일차 미니게임 결합 ---
+        function initQuestSystem() {
+            const container = document.getElementById('quest-container');
+            container.innerHTML = '';
+
+            // 1일차 퀘스트 전용 인터페이스 생성
+            const day1 = document.createElement('div');
+            day1.className = 'list-item';
+            day1.innerHTML = `
+                <div>
+                    <strong>🎯 1일차 퀘스트: 행성 주변 우주쓰레기 수거</strong>
+                    <span>🗑️ 날아다니는 파편을 클릭해 궤도를 정화하세요.</span>
+                </div>
+                <button class="btn-small" style="background:#7b2ff7;" onclick="launchTrashGame()">진입하기</button>
+            `;
+            container.appendChild(day1);
+
+            // 2일차부터 30일차까지 가상 목록 바인딩 (배열 구조 유지)
+            for(let i = 2; i <= 30; i++) {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `
+                    <div>
+                        <strong>🎯 ${i}일차 퀘스트: 잠겨있는 마음의 차원 수리</strong>
+                        <span style="color:#636e72;">🔒 이전 일차 미션을 완수하면 오픈됩니다.</span>
+                    </div>
+                    <button class="btn-small" style="background:#636e72;" disabled>대기중</button>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        // 🗑️ 1일차 미니게임 핵심 비즈니스 로직
+        let trashLeft = 5;
+        function launchTrashGame() {
+            openWindow('win-game1');
+            trashLeft = 5;
+            document.getElementById('trash-count').innerText = `남은 우주 쓰레기: ${trashLeft}개`;
+            document.getElementById('success-banner').style.display = 'none';
+            document.getElementById('btn-game-exit').style.display = 'none';
+
+            const zone = document.getElementById('game-zone');
+            zone.innerHTML = ''; // 캔버스 초기화
+
+            const trashEmojis = ['🛢️', '🥫', '🔩', '📡', '📦'];
+
+            // 무작위 궤도 위치에 쓰레기 요소 배치 생성
+            for(let i = 0; i < 5; i++) {
+                const item = document.createElement('div');
+                item.className = 'trash';
+                item.innerText = trashEmojis[i];
+                
+                // 가상 컨테이너 내부 안쪽 안전 좌표 추출
+                const posX = Math.random() * 80 + 5; 
+                const posY = Math.random() * 70 + 10;
+                item.style.left = `${posX}%`;
+                item.style.top = `${posY}%`;
+
+                // 클릭 수거 이벤트 연결
+                item.onclick = function() {
+                    this.remove(); // 파편 소거
+                    trashLeft--;
+                    document.getElementById('trash-count').innerText = `남은 우주 쓰레기: ${trashLeft}개`;
+                    
+                    // 쓰레기를 클리어했는지 상시 대조 연산 판별
+                    if (trashLeft === 0) {
+                        triggerGameSuccess();
+                    }
+                };
+                zone.appendChild(item);
+            }
+        }
+
+        function triggerGameSuccess() {
+            document.getElementById('success-banner').style.display = 'block';
+            document.getElementById('btn-game-exit').style.display = 'inline-block';
+
+            // 유저 세션 및 가상 서버 인메모리 데이터베이스에 코인 10개 충전 동기화
+            userSession.coins += 10;
+            let db = getServer();
+            db[userSession.id].coins = userSession.coins;
+            saveServer(db);
+
+            // 상단 토글 표시계 갱신 반영
+            document.getElementById('pill-coin').innerText = `🪙 코인: ${userSession.coins}개`;
+        }
+
+        // --- 진단 및 상점 기초 선언 ---
+        const qaData = [
+            { q: "최근 마음의 무기력함을 느끼는 주파수가 잦으신가요?", opts: [{t:"전혀 없다", s:"pastel-green"}, {t:"가끔 잔잔히 가라앉는다", s:"pastel-blue"}, {t:"심하게 요동친다", s:"pastel-red"}] }
+        ];
+        let testIdx = 0, testBucket = {};
+        function startTest() { testIdx = 0; testBucket = {'pastel-green':0,'pastel-blue':0,'pastel-red':0}; renderTest(); }
+        function renderTest() {
+            document.getElementById('test-step').innerText = `어울리는 행성 색깔 측정 중 (${testIdx+1}/10)`;
+            const node = qaData[0]; document.getElementById('test-q').innerText = node.q;
+            const div = document.getElementById('test-options'); div.innerHTML = '';
+            node.opts.forEach(o => {
+                const b = document.createElement('button'); b.className = 'option-btn'; b.innerText = o.t;
+                b.onclick = () => { testBucket[o.s]++; endTest(); }; div.appendChild(b);
+            });
+        }
+        function endTest() {
+            userSession.color = Object.keys(testBucket).reduce((a,b)=>testBucket[a]>testBucket[b]?a:b);
+            let db = getServer(); db[userSession.id].color = userSession.color; saveServer(db);
+            alert('진단 완료!'); openWindow('win-dashboard');
+        }
+        function initShop() {
+            const block = document.getElementById('shop-container'); block.innerHTML = '';
+            const products = [{id:'ring', name:'🪐 성운 고리 (60코인)'}, {id:'alien', name:'👽 외계인 크루 (40코인)'}];
+            products.forEach(p => {
+                const row = document.createElement('div'); row.className = 'list-item';
+                row.innerHTML = `<div><strong>${p.name}</strong></div><button class="btn-small" onclick="buyObj('${p.id}')">구매</button>`;
+                block.appendChild(row);
+            });
+        }
+        function buyObj(id) { alert('구매 프로세스는 퀘스트 보상 자금 수확 후 진행 가능합니다.'); }
+
+        window.onload = () => { initQuestSystem(); initShop(); };
+    </script>
+</body>
+</html>
